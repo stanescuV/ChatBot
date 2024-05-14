@@ -9,6 +9,7 @@
 /coverage
 
 # misc
+test_chatbot.txt
 .DS_Store
 .env
 .env.local
