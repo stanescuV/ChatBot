@@ -1,34 +1,46 @@
 import os
 import re
 from openai import OpenAI
-from pymilvus import MilvusClient
+from pymilvus import MilvusClient,connections, db
 
 
 #MILVUS
-client = MilvusClient(
-    uri="http://localhost:19530"
+clientMilvus = MilvusClient(
+    # uri="http://localhost:19530"
+    uri = "http://49.12.46.230:19530"
 )
 
+#DB
+# conn = connections.connect(host="49.12.46.230", port=19530)
+# database = db.create_database("CodPenal")
+
 # executed only once
-client.create_collection(
+clientMilvus.create_collection(
     collection_name="codPenal_collection",
     dimension=3072,
     metric_type="COSINE"
 )
 db_name = "codPenal_collection"
 
+clientMilvus.create_collection(
+    collection_name="codPenal_collectionTest",
+    dimension=3072,
+    metric_type="COSINE"
+)
+db_name_test = "codPenal_collectionTest"
+
 def insertData(collectionName, data):
-    res = client.insert(
+    res = clientMilvus.insert(
         collection_name=collectionName,
         data=data,
     )
     print(res)
 
 # EMBEDING / AI
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+clientOpenAI = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def get_embedding(text, model="text-embedding-3-large"):
-    return client.embeddings.create(input=[text], model=model).data[0].embedding
+    return clientOpenAI.embeddings.create(input=[text], model=model).data[0].embedding
 
 
 with open("codPenal.txt", "r", encoding='utf-8') as file:
@@ -69,19 +81,33 @@ def parse_legal_articles(text):
 
     return articles
 
-articles = parse_legal_articles(codPenal)
 
-embeddings = []
-articlesTest = [articles[0],articles[1],articles[2]]
 
 # OPEN AI EMBEDDING
 
-for ix, article in enumerate(articles) :
-    embeddings.append({"id" : ix, "text" : article, "embedding" : get_embedding(str(article))})
+#SET UP FOR PROD
+# embeddings = []
+articles = parse_legal_articles(codPenal)
 
-print(len(embeddings))
+# for ix, article in enumerate(articles) :
+#     embeddings.append({"id" : ix, "text" : article, "embedding" : get_embedding(str(article))})
 
-insertData(db_name, embeddings)
+# print(len(embeddings))
+
+# insertData(db_name, embeddings)
+
+
+#SET UP FOR TEST
+embeddingsTest = []
+articlesTest = [articles[0],articles[1]]
+
+for ix, article in enumerate(articlesTest):
+    embeddingsTest.append({"id" : ix, "text" : article, "embedding" : get_embedding(str(article))})
+
+print(len(embeddingsTest))
+
+insertData(db_name_test, embeddingsTest)
+
 
 
 
