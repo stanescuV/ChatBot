@@ -1,21 +1,37 @@
 import re
-from dotenv import load_dotenv
 from openai import OpenAI
+from pymilvus import MilvusClient
 
-load_dotenv()
+
+#MILVUS
+client = MilvusClient(
+    uri="http://localhost:19530"
+)
+
+# executed only once
+client.create_collection(
+    collection_name="codPenal_collection",
+    dimension=3072,
+    metric_type="COSINE"
+)
+db_name = "codPenal_collection"
+
+def insertData(collectionName, data):
+    res = client.insert(
+        collection_name=collectionName,
+        data=data,
+    )
+    print(res)
 
 # EMBEDING / AI
-
 client = OpenAI()
 
-
-def get_embedding(text, model="text-embedding-3-small"):
-    text = text.replace("\n", " ")
+def get_embedding(text, model="text-embedding-3-large"):
     return client.embeddings.create(input=[text], model=model).data[0].embedding
 
 
 with open("codPenal.txt", "r", encoding='utf-8') as file:
-    content = file.read()
+    codPenal = file.read()
 
 
 #From big String to an array of articles
@@ -52,5 +68,20 @@ def parse_legal_articles(text):
 
     return articles
 
+articles = parse_legal_articles(codPenal)
 
-print(parse_legal_articles(content))
+embeddings = []
+articlesTest = [articles[0],articles[1],articles[2]]
+
+# OPEN AI EMBEDDING
+
+for ix, article in enumerate(articles) :
+    embeddings.append({"id" : ix, "text" : article, "embedding" : get_embedding(str(article))})
+
+print(len(embeddings))
+
+insertData(db_name, embeddings)
+
+# print(parse_legal_articles(codPenal))
+
+
