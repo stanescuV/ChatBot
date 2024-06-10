@@ -1,3 +1,4 @@
+import os
 import re
 from openai import OpenAI
 from pymilvus import MilvusClient
@@ -24,7 +25,7 @@ def insertData(collectionName, data):
     print(res)
 
 # EMBEDING / AI
-client = OpenAI()
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def get_embedding(text, model="text-embedding-3-large"):
     return client.embeddings.create(input=[text], model=model).data[0].embedding
@@ -82,6 +83,6 @@ print(len(embeddings))
 
 insertData(db_name, embeddings)
 
-# print(parse_legal_articles(codPenal))
+
 
 
