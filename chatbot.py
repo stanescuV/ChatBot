@@ -67,23 +67,43 @@ def insertData(collectionName, data):
 # EMBEDING / AI
 clientOpenAI = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
+
+def get_chatbot_answer(query, answers):
+    answersString=str(answers)
+    completion = clientOpenAI.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system",
+             "content": "You are a friendly system that speaks Romanian, and specializes in Romanian law."},
+            {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answersString} and only this, as friendly as you can and also short and concise. "}
+        ]
+    )
+    print(completion.choices[0].message.content)
+    return completion.choices[0].message.content
+
 def get_embedding(text, model="text-embedding-3-large"):
     return clientOpenAI.embeddings.create(input=[text], model=model).data[0].embedding
 
 query = "Ce se intampla in caz de talharie?"
 queryEmbedding = get_embedding(query)
 # Single vector search
-res = clientMilvus.search(
-    collection_name=db_name,
-    # Replace with your query vector
-    data=[queryEmbedding],
-    limit=2, # Max. number of search results to return
-    search_params={"metric_type": "COSINE", "params": {}},
-    output_fields=["text"]
-)
 
-result = json.dumps(res, indent=4)
-print(result)
+def get_articles_milvus(queryEmbedding):
+
+    res = clientMilvus.search(
+        collection_name=db_name,
+        # Replace with your query vector
+        data=[queryEmbedding],
+        limit=2, # Max. number of search results to return
+        search_params={"metric_type": "COSINE", "params": {}},
+        output_fields=["text"]
+    )
+    result = json.dumps(res, indent=4)
+    return result
+get_articles_milvus(queryEmbedding)
+
+
+
 
 
 with open("codPenal.txt", "r", encoding='utf-8') as file:
