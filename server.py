@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from chatbot import get_embedding, get_articles_milvus,get_chatbot_answer
 
-app = Flask(__name__)
+app = Flask(__name__) 
 
 # Variable to store the received string
 stored_string = ""
@@ -23,7 +23,7 @@ def store_string():
         answer = get_chatbot_answer(stored_string, answers)
         print(f"Chatbot Answer: {answer}")
 
-        return jsonify({"message": "String stored and processed successfully"}), 200
+        return jsonify({"message": answer}), 200
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"message": "An error occurred"}), 500
@@ -33,4 +33,4 @@ def get_string():
     return jsonify({"stored_string": stored_string}), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)  # Bind to all interfaces
+    app.run(host='0.0.0.0', port=5000)  # de schimbat in productie 

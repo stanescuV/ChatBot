@@ -75,7 +75,7 @@ def get_chatbot_answer(query, answers):
         messages=[
             {"role": "system",
              "content": "You are a friendly system that speaks Romanian, and specializes in Romanian law."},
-            {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answersString} and only this, as friendly as you can and also short and concise. "}
+            {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answersString} and only this, as professionnal as you can and also short and concise. "}
         ]
     )
     print(completion.choices[0].message.content)
