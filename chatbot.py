@@ -5,6 +5,7 @@ from openai import OpenAI
 from pymilvus import MilvusClient, connections, db, FieldSchema, DataType, Collection
 
 #MILVUS
+#note add a .env IP variable !! 
 clientMilvus = MilvusClient(
     # uri="http://localhost:19530"
     uri = "http://49.12.46.230:19530"
