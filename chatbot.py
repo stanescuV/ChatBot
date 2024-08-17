@@ -1,18 +1,22 @@
 import json
 import os
 import re
+from dotenv import load_dotenv
 from openai import OpenAI
 from pymilvus import MilvusClient, connections, db, FieldSchema, DataType, Collection
 
+load_dotenv()
+
+MILVUS_IP = os.getenv("MILVUS_IP")
 #MILVUS
 #note add a .env IP variable !! 
 clientMilvus = MilvusClient(
     # uri="http://localhost:19530"
-    uri = "http://49.12.46.230:19530"
+    uri = f"http://{MILVUS_IP}:19530"
 )
 
 #DB
-conn = connections.connect(host="49.12.46.230", port=19530)
+conn = connections.connect(host=f"{MILVUS_IP}", port=19530)
 # database = db.create_database("CodPenal")
 
 #SCHEMA
@@ -31,14 +35,14 @@ schema.add_field(field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=307
 
 ##COLLECTION
 index_params = {
-    "metric_type": "COSINE",
     "index_type": "IVF_FLAT",
     "params": {"nlist": 128},
+    "metric_type": "COSINE"
 }
 
 collection = Collection(name="codPenal_collection", schema=schema)
-collection.load()
 collection.create_index("embedding", index_params)
+collection.load()
 # executed only once
 # clientMilvus.create_collection(
 #     collection_name="codPenal_collection",
@@ -47,7 +51,7 @@ collection.create_index("embedding", index_params)
 #     metric_type="COSINE"
 # )
 db_name = "codPenal_collection"
-#
+
 # clientMilvus.create_collection(
 #     collection_name="codPenal_collectionTest",
 #     dimension=3072,
@@ -147,32 +151,31 @@ def parse_legal_articles(text):
 
 
 
-# # INSERT MILVUS
-#
+# # # INSERT MILVUS
+# #
 # #SET UP FOR PROD
 # embeddings = []
 # articles = parse_legal_articles(codPenal)
-#
+
 # for ix, article in enumerate(articles) :
 #     embeddings.append({ "text" : str(article), "embedding" : get_embedding(str(article))})
-#
+
 # print(len(embeddings))
-#
+
 # insertData(db_name, embeddings)
-#
-#
+
+
 # #SET UP FOR TEST
 # embeddingsTest = []
 # articlesTest = [articles[0],articles[1]]
-#
+
 # for ix, article in enumerate(articlesTest):
 #     embeddingsTest.append({ "text" : str(article), "embedding" : get_embedding(str(article))})
-#
+
 # print(len(embeddingsTest))
-#
+
 # insertData(db_name_test, embeddingsTest)
-#
-# #
+
 
 
 
