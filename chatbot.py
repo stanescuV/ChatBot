@@ -79,7 +79,7 @@ def get_chatbot_answer(query, answers):
         model="gpt-4o-mini",
         messages=[
             {"role": "system",
-             "content": "You are a friendly system that speaks Romanian, and specializes in Romanian law."},
+             "content": "You are a professionnal lawyer system that speaks Romanian, and specializes in Romanian Penal Code and law."},
             {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answersString} and only this, as professionnal as you can and also short and concise. "}
         ]
     )
