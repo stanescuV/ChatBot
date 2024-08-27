@@ -151,8 +151,8 @@ def parse_legal_articles(text):
 
 
 
-# # # INSERT MILVUS
-# #
+# # INSERT MILVUS
+#
 # #SET UP FOR PROD
 # embeddings = []
 # articles = parse_legal_articles(codPenal)
