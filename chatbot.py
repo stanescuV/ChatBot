@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
 from pymilvus import MilvusClient, connections, DataType, Collection
@@ -167,12 +168,39 @@ def get_articles_milvus(query_embedding, top_k=2):
     return results
 
 # Usage
-query = "tâlhărie"
-query_embedding = get_embedding(query)
-articles = get_articles_milvus(query_embedding, top_k=2)
+# query = "Ce înseamnă «infracțiune» în Codul penal?"
+# query_embedding = get_embedding(query)
+# articles = get_articles_milvus(query_embedding, top_k=2)
 
-print(json.dumps(articles, ensure_ascii=False, indent=2))
+# print(json.dumps(articles, ensure_ascii=False, indent=2))
 
+
+# USE CASE FOR LOOP EMBEDDING QUESTIONS FOR TESTING 
+intrebari_test = []
+df = pd.read_csv("questions_penal_code_ro.csv")
+question_and_context = df.to_json(orient="records")
+
+for ix, row in enumerate(df.values):
+
+    intrebari_test.append(row[0])
+    
+    if ix >= 10:
+        break
+        
+print(intrebari_test)
+
+
+contextsFound = [] 
+
+def get_answer_csv_questions(intrebari):
+    for ix, intrebare in enumerate(intrebari): 
+        embedding = get_embedding(intrebare, model="text-embedding-3-large")
+        article_answers = get_articles_milvus(embedding, top_k=2)
+        for answer in article_answers:
+             contextsFound.append({'indexQuestion': ix, 'context': answer['text']})
+
+get_answer_csv_questions(intrebari_test) 
+print(contextsFound)
 # print(get_chatbot_answer(query, articles))
 
 
