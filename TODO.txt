@@ -1,2 +1,7 @@
 1. frontend
 2. DATASET chat gpt de verificat 50-100 de intrebari si raspunsuri si context
+
+
+Constructia unui dataset perfect : intrebare, context, raspuns 
+
+Make me 75 questions that 

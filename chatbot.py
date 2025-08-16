@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from dotenv import load_dotenv
 from openai import OpenAI
 from pymilvus import MilvusClient, connections, DataType, Collection
@@ -15,7 +16,7 @@ clientMilvus = MilvusClient(
 )
 
 #DB
-conn = connections.connect(host=f"localhost", port=19530)
+conn = connections.connect(host="localhost", port=19530)
 # database = db.create_database("CodPenal")
 
 #SCHEMA
@@ -61,7 +62,17 @@ db_name = "codPenal_collection"
 
 
 
-def insertData(collectionName, data):
+def insert_data(collectionName, data):
+    """
+    Inserts data into the specified Milvus collection.
+
+    Args:
+        collectionName (str): The name of the Milvus collection.
+        data (list): A list of data entries to insert.
+
+    Returns:
+        None
+    """
     res = clientMilvus.insert(
         collection_name=collectionName,
         data=data,
@@ -77,22 +88,52 @@ clientOpenAI = OpenAI(api_key=api_key)
 
 
 def get_chatbot_answer(query, answers):
-    answersString=str(answers)
+    """
+    Generates a concise, professional answer in Romanian to a legal query using provided articles.
+
+    Args:
+        query (str): The user's legal question.
+        answers (list): List of relevant articles or answers to use for context.
+
+    Returns:
+        str: The chatbot's answer in Romanian.
+    """
+    answers_string=str(answers)
     completion = clientOpenAI.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system",
              "content": "You are a professionnal lawyer system that speaks Romanian, and specializes in Romanian Penal Code and law."},
-            {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answersString} and only this, as professionnal as you can and also short and concise. "}
+            {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answers_string} and only this, as professionnal as you can and also short and concise. "}
         ]
     )
     print(completion.choices[0].message.content)
     return completion.choices[0].message.content
 
 def get_embedding(text, model="text-embedding-3-large"):
+    """
+    Generates an embedding vector for the given text using OpenAI's embedding model.
+
+    Args:
+        text (str): The input text to embed.
+        model (str, optional): The embedding model to use. Defaults to "text-embedding-3-large".
+
+    Returns:
+        list: The embedding vector for the input text.
+    """
     return clientOpenAI.embeddings.create(input=[text], model=model).data[0].embedding
 
 def get_articles_milvus(query_embedding, top_k=2):
+    """
+    Searches the Milvus collection for articles most similar to the query embedding.
+
+    Args:
+        query_embedding (list): The embedding vector of the query.
+        top_k (int, optional): Number of top results to return. Defaults to 2.
+
+    Returns:
+        list: List of dictionaries containing article id, score, and text.
+    """
     res = clientMilvus.search(
         collection_name=db_name,
         data=[query_embedding],
@@ -145,37 +186,55 @@ print(json.dumps(articles, ensure_ascii=False, indent=2))
 #From big String to an array of articles
 
 # def parse_legal_articles(text):
-#     # Define the pattern
-#     pattern = re.compile(r'(Art\.\s\d+\.)')
+#     # Capture the whole header (Art. 238.) AND the number (238)
+#     pattern = re.compile(r'(Art\.\s*(\d+)\.)')
 
-#     # Split the text at each article start
-#     parts = pattern.split(text)[1:]  # [1:] to skip the first empty result
+#     # With capturing groups, split() returns:
+#     # [pre, header1, number1, content1, header2, number2, content2, ...]
+#     parts = pattern.split(text)
 
 #     articles = []
-#     skip_keywords = ["CAP", "SEC", "TIT"]
+#     skip_keywords = ("CAP", "SEC", "TIT")
 
-#     for i in range(0, len(parts), 2):
+#     # Walk the array in chunks of 3: header, number, content
+#     for i in range(1, len(parts) - 1, 3):
+#         header = parts[i].strip()              # e.g., "Art. 238."
+#         number_str = parts[i + 1].strip()      # e.g., "238"
+#         content = parts[i + 2]                 # text after the header
 
-#         article_content = parts[i + 1]
-
-#         for keyword in skip_keywords:
-#             if keyword in article_content:
-#                 keyword_position = article_content.find(keyword)
-#                 article_content = article_content[:keyword_position].strip()
+#         # Stop content at the next structural keyword (if any)
+#         for kw in skip_keywords:
+#             pos = content.find(kw)
+#             if pos != -1:
+#                 content = content[:pos]
 #                 break
 
-#         article_content = article_content.replace('\n', ' ')
+#         # Normalize whitespace
+#         content = re.sub(r'\s+', ' ', content).strip()
 
-#         article_name = article_content.split('.')[0].strip()
-#         article_text = article_content.split('.', 1)[1].strip() if '.' in article_content else ''
+#         # Extract title (ArtName) = text before first period in the content
+#         if '.' in content:
+#             art_name, art_text = content.split('.', 1)
+#             art_name = art_name.strip()
+#             art_text = art_text.strip()
+#         else:
+#             art_name = content.strip()
+#             art_text = ""
+
+#         # Convert number to int when possible
+#         try:
+#             art_number = int(number_str)
+#         except ValueError:
+#             art_number = number_str  # fallback to string if unexpected format
 
 #         articles.append({
-#             'ArtName': article_name,
-#             'ArtText': article_text
+#             'ArtNumber': art_number,
+#             'ArtName': art_name,
+#             'ArtText': art_text
 #         })
 
-#     return articles
 
+#     return articles
 
 
 # # INSERT MILVUS
@@ -189,7 +248,7 @@ print(json.dumps(articles, ensure_ascii=False, indent=2))
 
 # print(len(embeddings))
 
-# insertData(db_name, embeddings)
+# insert_data(db_name, embeddings)
 
 
 #SET UP FOR TEST
@@ -201,7 +260,7 @@ print(json.dumps(articles, ensure_ascii=False, indent=2))
 
 # print(len(embeddingsTest))
 
-# insertData(db_name_test, embeddingsTest)
+# insert_data(db_name_test, embeddingsTest)
 
 
 
