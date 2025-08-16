@@ -1,6 +1,5 @@
 import json
 import os
-import re
 from dotenv import load_dotenv
 from openai import OpenAI
 from pymilvus import MilvusClient, connections, DataType, Collection
@@ -70,7 +69,11 @@ def insertData(collectionName, data):
     print(res)
 
 # EMBEDING / AI
-clientOpenAI = OpenAI(api_key="")
+# Get the key from environment
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Initialize client correctly (must be keyword arg)
+clientOpenAI = OpenAI(api_key=api_key)
 
 
 def get_chatbot_answer(query, answers):
