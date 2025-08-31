@@ -88,18 +88,18 @@ api_key = os.getenv("OPENAI_API_KEY")
 clientOpenAI = OpenAI(api_key=api_key)
 
 
-def get_chatbot_answer(query, answers):
+def get_chatbot_answer(query, articles):
     """
     Generates a concise, professional answer in Romanian to a legal query using provided articles.
 
     Args:
         query (str): The user's legal question.
-        answers (list): List of relevant articles or answers to use for context.
+        articles (list): List of relevant articles or articles to use for context.
 
     Returns:
         str: The chatbot's answer in Romanian.
     """
-    answers_string=str(answers)
+    answers_string=str(articles)
     completion = clientOpenAI.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -184,7 +184,7 @@ for ix, row in enumerate(df.values):
 
     intrebari_test.append(row[0])
     
-    if ix >= 10:
+    if ix > 0:
         break
         
 print(intrebari_test)
@@ -192,16 +192,44 @@ print(intrebari_test)
 
 contextsFound = [] 
 
-def get_answer_csv_questions(intrebari):
-    for ix, intrebare in enumerate(intrebari): 
-        embedding = get_embedding(intrebare, model="text-embedding-3-large")
-        article_answers = get_articles_milvus(embedding, top_k=2)
-        for answer in article_answers:
-             contextsFound.append({'indexQuestion': ix, 'context': answer['text']})
+def get_answer_question(intrebare):
+    embedding = get_embedding(intrebare, model="text-embedding-3-large")
+    article_answers = get_articles_milvus(embedding, top_k=2)
+    answer_from_gpt = get_chatbot_answer(intrebare, article_answers)
+    print(article_answers)
+    print(answer_from_gpt)
 
-get_answer_csv_questions(intrebari_test) 
-print(contextsFound)
+
+for intrebare in intrebari_test:
+    get_answer_question(intrebare)
+
+
+
+
+# get_answer_csv_questions(intrebari_test) 
+# print(contextsFound)
+
+# def get_answer_csv_questions(intrebari):
+#     for ix, intrebare in enumerate(intrebari): 
+#         embedding = get_embedding(intrebare, model="text-embedding-3-large")
+#         article_answers = get_articles_milvus(embedding, top_k=2)
+        
+#         for answer in article_answers:
+#             contextsFound.append({'indexQuestion': ix, 'context': answer['text']})
+
+# get_answer_csv_questions(intrebari_test) 
+# print(contextsFound)
+# previousIx = 123
+# for context in contextsFound:
+#     if previousIx != context["indexQuestion"]:
+
+
+    
+
+
+
 # print(get_chatbot_answer(query, articles))
+
 
 
 

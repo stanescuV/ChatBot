@@ -5,3 +5,7 @@
 Constructia unui dataset perfect : intrebare, context, raspuns 
 
 Make me 75 questions that are answerable by using the Romanian Penal Code, write them in Romanian, and put them all in a csv please
+
+
+
+UN array list : [{intrebare, context, raspuns}]
