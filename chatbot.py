@@ -16,7 +16,6 @@ api_key = os.getenv("OPENAI_API_KEY")
 # Initialize client correctly (must be keyword arg)
 clientOpenAI = OpenAI(api_key=api_key)
 
-
 def get_chatbot_answer(query, articles):
     """
     Generates a concise, professional answer in Romanian to a legal query using provided articles.
@@ -73,14 +72,8 @@ def get_answer_question(question: str):
     answer_from_gpt = get_chatbot_answer(question, article_answers)
     print(answer_from_gpt)
 
-
 for intrebare in intrebari_test:
     get_answer_question(intrebare)
-
-
-
-
-# print(get_chatbot_answer(query, articles))
 
 
 
