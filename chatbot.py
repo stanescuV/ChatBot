@@ -1,16 +1,14 @@
-import json
 import os
-import re
 import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
-from milvus_handler import MilvusHandler 
+from milvus_handler import MilvusHandler
 
 load_dotenv()
 
 
 # === Init Milvus ===
-milvus = MilvusHandler() 
+milvus = MilvusHandler()
 
 # EMBEDING / AI
 api_key = os.getenv("OPENAI_API_KEY")
@@ -30,16 +28,23 @@ def get_chatbot_answer(query, articles):
     Returns:
         str: The chatbot's answer in Romanian.
     """
-    answers_string=str(articles)
+    context=str(articles)
     completion = clientOpenAI.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system",
-             "content": "You are a professionnal lawyer system that speaks Romanian, and specializes in Romanian Penal Code and law."},
-            {"role": "user", "content": f"You are going to answer {query} in Romanian, by using {answers_string} and only this, as professionnal as you can and also short and concise. "}
-        ]
+        messages=[     
+            {
+                "role": "system",
+                "content": "Eşti un sistem profesionist de avocatură care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română."
+            },
+            {
+                "role": "user", "content": f"""
+                --IDENTITY: A romanian lawyer that answers short and concise.
+                --TASK: You are going to answer the USER_QUERY by using CONTEXT.
+                --USER_QUERY: {query}
+                --CONTEXT: {context}
+                """
+            }]
     )
-    print(completion.choices[0].message.content)
     return completion.choices[0].message.content
 
 def get_embedding(text, model="text-embedding-3-large"):
@@ -54,15 +59,6 @@ def get_embedding(text, model="text-embedding-3-large"):
         list: The embedding vector for the input text.
     """
     return clientOpenAI.embeddings.create(input=[text], model=model).data[0].embedding
-
-
-# Usage
-# query = "Ce înseamnă «infracțiune» în Codul penal?"
-# query_embedding = get_embedding(query)
-# articles = get_articles_milvus(query_embedding, top_k=2)
-
-# print(json.dumps(articles, ensure_ascii=False, indent=2))
-
 
 # USE CASE FOR LOOP EMBEDDING QUESTIONS FOR TESTING 
 intrebari_test = []
@@ -79,8 +75,6 @@ for ix, row in enumerate(df.values):
 print(intrebari_test)
 
 
-contextsFound = [] 
-
 def get_answer_question(question: str):
     """
     Generates and prints an answer to a legal question using embeddings and a chatbot.
@@ -91,7 +85,6 @@ def get_answer_question(question: str):
     embedding = get_embedding(question, model="text-embedding-3-large")
     article_answers = milvus.search(embedding, top_k=2)
     answer_from_gpt = get_chatbot_answer(question, article_answers)
-    print(article_answers)
     print(answer_from_gpt)
 
 
