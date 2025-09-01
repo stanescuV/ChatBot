@@ -1,8 +1,8 @@
 import os
-import pandas as pd
 from dotenv import load_dotenv
 from openai import OpenAI
 from milvus_handler import MilvusHandler
+from intrebari_test import intrebari_test
 
 load_dotenv()
 
@@ -31,7 +31,7 @@ def get_chatbot_answer(query, articles):
     context=str(articles)
     completion = clientOpenAI.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[     
+        messages=[
             {
                 "role": "system",
                 "content": "Eşti un sistem profesionist de avocatură care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română."
@@ -43,7 +43,8 @@ def get_chatbot_answer(query, articles):
                 --USER_QUERY: {query}
                 --CONTEXT: {context}
                 """
-            }]
+            }
+        ]
     )
     return completion.choices[0].message.content
 
@@ -59,21 +60,6 @@ def get_embedding(text, model="text-embedding-3-large"):
         list: The embedding vector for the input text.
     """
     return clientOpenAI.embeddings.create(input=[text], model=model).data[0].embedding
-
-# USE CASE FOR LOOP EMBEDDING QUESTIONS FOR TESTING 
-intrebari_test = []
-df = pd.read_csv("questions_penal_code_ro.csv")
-question_and_context = df.to_json(orient="records")
-
-for ix, row in enumerate(df.values):
-
-    intrebari_test.append(row[0])
-    
-    if ix == 0:
-        break
-        
-print(intrebari_test)
-
 
 def get_answer_question(question: str):
     """
