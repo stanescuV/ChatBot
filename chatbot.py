@@ -10,6 +10,10 @@ load_dotenv()
 # === Init Milvus ===
 milvus = MilvusHandler()
 
+milvus2 = MilvusHandler() 
+
+print(milvus is milvus2)
+
 # EMBEDING / AI
 api_key = os.getenv("OPENAI_API_KEY")
 
@@ -60,7 +64,7 @@ def get_embedding(text, model="text-embedding-3-large"):
     """
     return clientOpenAI.embeddings.create(input=[text], model=model).data[0].embedding
 
-def get_answer_question(question: str):
+def run_chatbot(question: str):
     """
     Generates and prints an answer to a legal question using embeddings and a chatbot.
 
@@ -73,7 +77,7 @@ def get_answer_question(question: str):
     print(answer_from_gpt)
 
 for intrebare in intrebari_test:
-    get_answer_question(intrebare)
+    run_chatbot(intrebare)
 
 
 
