@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from milvus_handler import MilvusHandler
-from intrebari_test import intrebari_test
+from intrebari_test import intrebari_test, write_in_csv
+import numpy as np
 
 load_dotenv()
 
@@ -10,15 +11,12 @@ load_dotenv()
 # === Init Milvus ===
 milvus = MilvusHandler()
 
-milvus2 = MilvusHandler() 
-
-print(milvus is milvus2)
-
 # EMBEDING / AI
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize client correctly (must be keyword arg)
 clientOpenAI = OpenAI(api_key=api_key)
+model = "gpt-4o-mini"
 
 def get_chatbot_answer(query, articles):
     """
@@ -33,7 +31,7 @@ def get_chatbot_answer(query, articles):
     """
     context=str(articles)
     completion = clientOpenAI.chat.completions.create(
-        model="gpt-4o-mini",
+        model=model,
         messages=[
             {
                 "role": "system",
@@ -72,12 +70,25 @@ def run_chatbot(question: str):
         question (str): The legal question to be answered.
     """
     embedding = get_embedding(question, model="text-embedding-3-large")
-    article_answers = milvus.search(embedding, top_k=2)
-    answer_from_gpt = get_chatbot_answer(question, article_answers)
+    context = milvus.search(embedding, top_k=2)
+    answer_from_gpt = get_chatbot_answer(question, context)
     print(answer_from_gpt)
+    return answer_from_gpt, context
 
-for intrebare in intrebari_test:
-    run_chatbot(intrebare)
+
+full_ragas_dataset = []
+# test_intrebari_test = intrebari_test[0:2]
+
+# print(test_intrebari_test)
+for _, intrebare_arr in intrebari_test:
+    intrebare = intrebare_arr[0]
+    answer, context = run_chatbot(intrebare)
+
+    ragas_dataset_obj = {"question":intrebare, "context":context, "answer_gpt":answer}
+    full_ragas_dataset.append(ragas_dataset_obj)
+
+write_in_csv(str(full_ragas_dataset))
+
 
 
 
