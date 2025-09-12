@@ -76,18 +76,20 @@ def run_chatbot(question: str):
     return answer_from_gpt, context
 
 
+
+
 full_ragas_dataset = []
 # test_intrebari_test = intrebari_test[0:2]
 
 # print(test_intrebari_test)
-for _, intrebare_arr in intrebari_test:
-    intrebare = intrebare_arr[0]
-    answer, context = run_chatbot(intrebare)
+# for _, intrebare_arr in intrebari_test:
+#     intrebare = intrebare_arr[0]
+#     answer, context = run_chatbot(intrebare)
 
-    ragas_dataset_obj = {"question":intrebare, "context":context, "answer_gpt":answer}
-    full_ragas_dataset.append(ragas_dataset_obj)
+#     ragas_dataset_obj = {"question":intrebare, "context":context, "answer_gpt":answer}
+#     full_ragas_dataset.append(ragas_dataset_obj)
 
-write_in_csv(str(full_ragas_dataset))
+# write_in_csv(str(full_ragas_dataset))
 
 
 
