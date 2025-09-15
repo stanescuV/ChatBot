@@ -71,12 +71,13 @@ def run_chatbot(question: str):
     """
     embedding = get_embedding(question, model="text-embedding-3-large")
     context = milvus.search(embedding, top_k=2)
+    print(context)
     answer_from_gpt = get_chatbot_answer(question, context)
     print(answer_from_gpt)
     return answer_from_gpt, context
 
 
-
+run_chatbot('ce se intampla daca fur')
 
 full_ragas_dataset = []
 # test_intrebari_test = intrebari_test[0:2]
