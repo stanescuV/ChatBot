@@ -8,6 +8,9 @@ import numpy as np
 load_dotenv()
 
 
+#TODO FUNCTION DISPATCHER
+#TODO Dataset cu intrebari in multiple feluri, proaste / stupide, cooerente profi, cooerente formulate informal ...etc 
+
 # === Init Milvus ===
 milvus = MilvusHandler()
 
@@ -77,7 +80,7 @@ def run_chatbot(question: str):
     return answer_from_gpt, context
 
 
-run_chatbot('ce se intampla daca fur')
+# run_chatbot('ce se intampla daca fur')
 
 full_ragas_dataset = []
 # test_intrebari_test = intrebari_test[0:2]
