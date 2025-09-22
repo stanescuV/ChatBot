@@ -8,8 +8,8 @@ import numpy as np
 load_dotenv()
 
 
-#TODO FUNCTION DISPATCHER
-#TODO Dataset cu intrebari in multiple feluri, proaste / stupide, cooerente profi, cooerente formulate informal ...etc 
+#TODO: FUNCTION DISPATCHER
+#TODO: Dataset cu intrebari in multiple feluri, proaste / stupide, cooerente profi, cooerente formulate informal ...etc 
 
 # === Init Milvus ===
 milvus = MilvusHandler()
@@ -81,19 +81,6 @@ def run_chatbot(question: str):
 
 
 # run_chatbot('ce se intampla daca fur')
-
-full_ragas_dataset = []
-# test_intrebari_test = intrebari_test[0:2]
-
-# print(test_intrebari_test)
-# for _, intrebare_arr in intrebari_test:
-#     intrebare = intrebare_arr[0]
-#     answer, context = run_chatbot(intrebare)
-
-#     ragas_dataset_obj = {"question":intrebare, "context":context, "answer_gpt":answer}
-#     full_ragas_dataset.append(ragas_dataset_obj)
-
-# write_in_csv(str(full_ragas_dataset))
 
 
 
