@@ -1,9 +1,9 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-from milvus_handler import MilvusHandler
-from intrebari_test import intrebari_test, write_in_csv
-import numpy as np
+from db.milvus_handler import MilvusHandler
+# from test_dataset.intrebari_test import intrebari_test, write_in_csv
+# import numpy as np
 
 load_dotenv()
 
@@ -80,7 +80,7 @@ def run_chatbot(question: str):
     return answer_from_gpt, context
 
 
-# run_chatbot('ce se intampla daca fur')
+run_chatbot('ce se intampla daca fur')
 
 
 
