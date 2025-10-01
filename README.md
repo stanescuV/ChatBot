@@ -48,10 +48,14 @@ This chatbot is built to process and answer questions about the Romanian Penal C
 
 1. Start the chatbot:
    ```bash
-   python chatbot.py
+  python -m jupyterlab
    ```
 
-2. The Gradio interface will be available at `http://localhost:7860`
+2. Go to gradio_test.ipynb
+
+3. Press play. 
+
+4. The Gradio interface will be available at `http://localhost:7860`
 
 
 ## Data Processing
