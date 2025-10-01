@@ -1,10 +1,14 @@
 # Legal Chatbot with Milvus
 
-A specialized chatbot system designed to handle queries related to the Romanian Penal Code, utilizing vector embeddings and Milvus for efficient information retrieval.
+A specialized chatbot system designed to handle queries related to the Romanian
+Penal Code, utilizing vector embeddings and Milvus for efficient information
+retrieval.
 
 ## Project Overview
 
-This chatbot is built to process and answer questions about the Romanian Penal Code. It uses vector embeddings stored in Milvus to provide accurate responses to legal queries.
+This chatbot is built to process and answer questions about the Romanian Penal
+Code. It uses vector embeddings stored in Milvus to provide accurate responses
+to legal queries.
 
 ## Features
 
@@ -24,43 +28,54 @@ This chatbot is built to process and answer questions about the Romanian Penal C
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/stanescuV/ChatBot.git
    cd ChatBot
    ```
 
 2. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. Start Milvus using Docker:
+
    ```bash
    docker-compose up -d
    ```
 
-4. Insert data in Milvus 
+4. Insert data in Milvus
    ```bash
    python insert_data_milvus.py
    ```
 
 ## Usage
 
-1. Start the chatbot:
+1. Start the chatbot
+
    ```bash
-  python -m jupyterlab
+   python -m jupyterlab
    ```
 
-2. Go to gradio_test.ipynb
+2. Open the notebook
 
-3. Press play. 
+   Navigate to `gradio_test.ipynb`.
 
-4. The Gradio interface will be available at `http://localhost:7860`
+3. Run the notebook
 
+   Press ▶️ Play to execute the cells.
+
+4. Access the Gradio interface
+
+   Once running, open [http://localhost:7860](http://localhost:7860) in your
+   browser.
 
 ## Data Processing
 
 The project includes Jupyter notebooks for data processing:
+
 - `dataset/refactoring_cod_penal.ipynb`: Processes the Romanian Penal Code
 - `test_dataset/ragas_dataset_format.ipynb`: Prepares data for Ragas evaluation
 
@@ -69,4 +84,5 @@ The project includes Jupyter notebooks for data processing:
 STANESCU VICTOR : stanescuvictor12@gmail.com
 
 ---
+
 Created and maintained by Stanescu Victor
