@@ -85,4 +85,4 @@ def run_chatbot(question: str):
     return answer_from_gpt, context
 
 
-run_chatbot("ce se intampla daca fur")
+# run_chatbot("ce se intampla daca fur")
