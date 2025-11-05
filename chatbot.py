@@ -1,12 +1,18 @@
 import os
 from langchain.agents import create_agent
 from dotenv import load_dotenv
+from langfuse import Langfuse
+
+from langfuse.langchain import CallbackHandler
 from langchain_openai import OpenAIEmbeddings
 from db.milvus_handler import MilvusHandler
 
-
 load_dotenv()
 
+# === Init Langfuse (SELF-HOSTED) ===
+
+langfuse = Langfuse()
+langfuse_handler = CallbackHandler()
 
 # === Init Milvus ===
 milvus = MilvusHandler()
@@ -24,7 +30,7 @@ agent = create_agent(
 )
 
 
-def get_chatbot_answer(query:str, articles:list):
+def get_chatbot_answer(query: str, articles: list):
     """
     Generates a concise, professional answer in Romanian to a legal query using provided articles.
 
@@ -40,8 +46,8 @@ def get_chatbot_answer(query:str, articles:list):
         {
             "messages": [
                 {
-                "role": "user",
-                "content": f"""
+                    "role": "user",
+                    "content": f"""
                     --IDENTITY: A romanian lawyer that answers short and concise.
                     --TASK: You are going to answer the USER_QUERY by using CONTEXT.
                     --USER_QUERY: {query}
@@ -49,7 +55,7 @@ def get_chatbot_answer(query:str, articles:list):
                 """,
                 }
             ]
-        }
+        }, config={"callbacks": [langfuse_handler]},
     )
     return completion["messages"][-1].content
 
@@ -65,9 +71,7 @@ def get_embedding(text: str):
     Returns:
         list: The embedding vector for the input text.
     """
-    return (
-        embeddings.embed_query(text)
-    )
+    return embeddings.embed_query(text)
 
 
 def run_chatbot(question: str):

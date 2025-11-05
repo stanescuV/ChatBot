@@ -12,6 +12,7 @@ dependencies = [
     "lab>=8.5",
     "langchain>=1.0.3",
     "langchain-openai>=1.0.1",
+    "langfuse>=3.9.0",
     "openai>=2.6.1",
     "panda>=0.3.1",
     "pydantic>=2.11.10",
