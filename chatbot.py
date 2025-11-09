@@ -1,7 +1,7 @@
 import os
 from langchain.agents import create_agent
 from dotenv import load_dotenv
-from langfuse import Langfuse
+from langfuse import Langfuse, get_client
 
 from langfuse.langchain import CallbackHandler
 from langchain_openai import OpenAIEmbeddings
@@ -9,9 +9,10 @@ from db.milvus_handler import MilvusHandler
 
 load_dotenv()
 
-# === Init Langfuse (SELF-HOSTED) ===
+# === Init Langfuse ===
 
-langfuse = Langfuse()
+langfuse = get_client()
+# langfuse_client = 
 langfuse_handler = CallbackHandler()
 
 # === Init Milvus ===
@@ -23,12 +24,11 @@ model = os.getenv("CHATBOT_MODEL_GENERATIVE")
 embedding_model = os.getenv("CHATBOT_MODEL_EMBEDDING")
 embeddings = OpenAIEmbeddings(model=embedding_model)
 
-# === Init Agent===
+# === Init Agent ===
 agent = create_agent(
     model=model,
     system_prompt="Eşti un sistem profesionist de avocatură care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română.",
 )
-
 
 def get_chatbot_answer(query: str, articles: list):
     """
@@ -55,7 +55,8 @@ def get_chatbot_answer(query: str, articles: list):
                 """,
                 }
             ]
-        }, config={"callbacks": [langfuse_handler]},
+        },
+        config={"callbacks": [langfuse_handler]},
     )
     return completion["messages"][-1].content
 
@@ -71,9 +72,24 @@ def get_embedding(text: str):
     Returns:
         list: The embedding vector for the input text.
     """
-    return embeddings.embed_query(text)
-
-
+    
+    # Create a new trace for embedding computation
+    # Start observation with specific type
+    with langfuse.start_as_current_observation(
+        as_type="embedding",
+        name="embedding-generation"
+    ) as obs:
+        try:
+            vector = embeddings.embed_query(text)
+            obs.update(output=vector)
+            return vector
+        except Exception as exc:
+            print(f"Error generating embedding: {exc}")
+            raise
+        
+    
+          
+      
 def run_chatbot(question: str):
     """
     Generates and prints an answer to a legal question using embeddings and a chatbot.
@@ -89,4 +105,4 @@ def run_chatbot(question: str):
     return answer_from_gpt, context
 
 
-# run_chatbot("ce se intampla daca fur")
+run_chatbot("ce se intampla daca fur")
