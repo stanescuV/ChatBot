@@ -1,9 +1,10 @@
 import os
 from langchain.agents import create_agent
 from dotenv import load_dotenv
-from langfuse import Langfuse, get_client
+from langfuse import get_client
 
 from langfuse.langchain import CallbackHandler
+
 from langchain_openai import OpenAIEmbeddings
 from db.milvus_handler import MilvusHandler
 
@@ -25,6 +26,8 @@ embedding_model = os.getenv("CHATBOT_MODEL_EMBEDDING")
 embeddings = OpenAIEmbeddings(model=embedding_model)
 
 # === Init Agent ===
+#TODO: Step by step prompt construction with Langgraph. 
+
 agent = create_agent(
     model=model,
     system_prompt="Eşti un sistem profesionist de avocatură care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română.",
@@ -86,10 +89,7 @@ def get_embedding(text: str):
         except Exception as exc:
             print(f"Error generating embedding: {exc}")
             raise
-        
-    
-          
-      
+             
 def run_chatbot(question: str):
     """
     Generates and prints an answer to a legal question using embeddings and a chatbot.
