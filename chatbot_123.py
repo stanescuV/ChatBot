@@ -5,6 +5,7 @@ from typing import TypedDict, List, Optional # Standard library
 from dotenv import load_dotenv
 from IPython.display import Image, display
 from langchain.chat_models import init_chat_model
+from langgraph.config import get_stream_writer
 from langchain_core.messages import (
     BaseMessage,
     HumanMessage,
@@ -49,6 +50,10 @@ class GraphState(TypedDict):
     query: str
     embedding: Optional[List[float]]
     context: Optional[List[str]] 
+    first: Optional[str]
+    second: Optional[str]
+    third: Optional[str]
+    fourth: Optional[str]
 
 
 # === Node Functions ===
@@ -64,7 +69,8 @@ def extract_query_node(state: GraphState):
     if not isinstance(last_message, HumanMessage):
         raise ValueError("Last message is not a HumanMessage.")
     
-    print(f"--- 1. Query extracted: {last_message.content} ---")
+    writer = get_stream_writer()
+    writer(f"--- 1. Query extracted: {last_message.content} ---")
     return {"query": last_message.content}
 
 def get_embedding_node(state: GraphState):
@@ -145,7 +151,6 @@ def get_chatbot_answer_node(state: GraphState):
     # Add the AI's answer to the list of messages
     return {"messages": state["messages"] + [answer_message]}
 
-
 # === Build the Graph ===
 
 print("=== 🛠️ Compiling Graph ===")
@@ -160,6 +165,7 @@ agent_builder.add_node("get_chatbot_answer", get_chatbot_answer_node)
 
 # 2. Add edges
 agent_builder.add_edge(START, "extract_query")
+agent_builder.add_edge("extract_query", "get_embedding")
 agent_builder.add_edge("extract_query", "get_embedding")
 agent_builder.add_edge("get_embedding", "get_context")
 agent_builder.add_edge("get_context", "get_chatbot_answer")
@@ -180,15 +186,21 @@ except Exception as e:
 # === Example usage ===
 
 # Define your initial messages
-system_message = SystemMessage(content="Eşti un sistem profesionist de avocaturT care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română.")
+system_message = SystemMessage(content="Eşti un sistem profesionist de avocatură care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română.")
 user_query = HumanMessage(content="Ce se intampla daca fur ?")
 
 initial_messages = [system_message, user_query]
 
 # Invoke the graph
 # The input is a dictionary matching the GraphState
-new_state = agent_graph.invoke({"messages": initial_messages})
+# new_state = agent_graph.invoke({"messages": initial_messages})
 
+graph_input = {"messages": initial_messages}
+
+# TODO: SSE server side events 
+for chunk in agent_graph.stream(graph_input, stream_mode="custom"):
+    print(chunk)
+    
 print("\n--- 🏁 Final State ---")
-for m in new_state["messages"]:
-    m.pretty_print()
+# for m in new_state["messages"]:
+#     m.pretty_print()

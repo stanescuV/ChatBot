@@ -1,5 +1,4 @@
 import os
-from langchain.agents import create_agent
 from dotenv import load_dotenv
 from langfuse import get_client
 
@@ -8,7 +7,6 @@ from langchain.chat_models import init_chat_model
 from langchain_openai import OpenAIEmbeddings
 from db.milvus_handler import MilvusHandler
 from langchain.messages import SystemMessage
-from typing import Literal
 from langgraph.graph import StateGraph, START, END
 from messages_class import MessagesState
 from langchain.messages import HumanMessage
