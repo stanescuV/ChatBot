@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "asyncio>=4.0.0",
     "dotenv>=0.9.9",
     "fastapi>=0.120.4",
     "gradio>=5.49.1",
@@ -18,4 +19,5 @@ dependencies = [
     "panda>=0.3.1",
     "pydantic>=2.11.10",
     "pymilvus>=2.6.3",
+    "uvicorn>=0.38.0",
 ]
