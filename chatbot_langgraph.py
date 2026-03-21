@@ -1,155 +1,125 @@
 import os
+import operator
 from dotenv import load_dotenv
 from langfuse import get_client
-
 from langfuse.langchain import CallbackHandler
 from langchain.chat_models import init_chat_model
 from langchain_openai import OpenAIEmbeddings
-from db.milvus_handler import MilvusHandler
-from langchain.messages import SystemMessage
+from langchain.messages import SystemMessage, HumanMessage, AnyMessage
 from langgraph.graph import StateGraph, START, END
-from messages_class import MessagesState
-from langchain.messages import HumanMessage
-from IPython.display import Image, display
-
+from typing_extensions import TypedDict, Annotated
+from db.milvus_handler import MilvusHandler
+from constants import system_promt
 
 load_dotenv()
 
-# === Init Langfuse ===
-
+# === Langfuse ===
 langfuse = get_client()
-# langfuse_client ===
 langfuse_handler = CallbackHandler()
 
-# === Init Milvus ===
+# === Milvus ===
 milvus = MilvusHandler()
 
-
-
-# EMBEDING / AI
-api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("CHATBOT_MODEL_GENERATIVE")
+# === Models ===
+model_str = os.getenv("CHATBOT_MODEL_GENERATIVE")
 embedding_model = os.getenv("CHATBOT_MODEL_EMBEDDING")
+
+llm = init_chat_model(model=model_str, streaming=True)
 embeddings = OpenAIEmbeddings(model=embedding_model)
 
-# === Init Agent ===
-
-#TODO: Step by step prompt construction with Langgraph. 
-
-agent = init_chat_model(
-    model=model,
-)
-
-
-messages = [SystemMessage(content="Eşti un sistem profesionist de avocatură care vorbeşte limba română şi este specializat în Codul Penal şi legislaţia română.")]
-
-query = HumanMessage(content="ce se intampla daca fur ? ")
-
-agent_builder = StateGraph(MessagesState)
 
 
 
+# === State ===
+class ChatbotState(TypedDict):
+    question: str
+    embedding: list
+    context: list
+    messages: Annotated[list[AnyMessage], operator.add]
 
 
-
-def get_context(embedding):
-    context = milvus.search(embedding, top_k=2)
-    return context
-
-def get_chatbot_answer(query: str, articles: list):
-    """
-    Generates a concise, professional answer in Romanian to a legal query using provided articles.
-
-    Args:
-        query (str): The user's legal question.
-        articles (list): List of relevant articles or articles to use for context.
-
-    Returns:
-        str: The chatbot's answer in Romanian.
-    """
-    context = str(articles)
-    completion = agent.invoke(
-        {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": f"""
-                    --IDENTITY: A romanian lawyer that answers short and concise.
-                    --TASK: You are going to answer the USER_QUERY by using CONTEXT.
-                    --USER_QUERY: {query}
-                    --CONTEXT: {context}
-                """,
-                }
-            ]
-        },
-        config={"callbacks": [langfuse_handler]},
-    )
-    return completion["messages"][-1].content
-
-def get_embedding(text: str):
-    """
-    Generates an embedding vector for the given text using OpenAI's embedding model.
-
-    Args:
-        text (str): The input text to embed.
-        model (str, optional): The embedding model to use. Defaults to "text-embedding-3-large".
-
-    Returns:
-        list: The embedding vector for the input text.
-    """
-    
-    # Create a new trace for embedding computation
-    # Start observation with specific type
+# === Nodes ===
+def embed_query(state: ChatbotState) -> dict:
     with langfuse.start_as_current_observation(
-        as_type="embedding",
-        name="embedding-generation"
+        as_type="embedding", name="embedding-generation"
     ) as obs:
         try:
-            if( isinstance(text, str) == False or len(text) == 0):
-                raise ValueError("Input text for embedding is empty." , "text is " + str(text))
+            if not isinstance(state["question"], str) or not state["question"]:
+                raise ValueError("Input text for embedding is empty.")
+            vector = embeddings.embed_query(state["question"])
+            obs.update(output=vector)
+            return {"embedding": vector}
+        except Exception as exc:
+            print(f"Error generating embedding: {exc}")
+            raise
+
+
+def retrieve_context(state: ChatbotState) -> dict:
+    context = milvus.search(state["embedding"], top_k=2)
+    return {"context": context}
+
+
+def generate_answer(state: ChatbotState) -> dict:
+    context = str(state["context"])
+    prompt = (
+        f"--IDENTITY: A romanian lawyer that answers short and concise.\n"
+        f"--TASK: You are going to answer the USER_QUERY by using CONTEXT.\n"
+        f"--USER_QUERY: {state['question']}\n"
+        f"--CONTEXT: {context}"
+    )
+    messages = [
+        SystemMessage(content=system_promt),
+        HumanMessage(content=prompt),
+    ]
+    response = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+    return {"messages": [response]}
+
+
+# === Graph ===
+_builder = StateGraph(ChatbotState)
+_builder.add_node("embed_query", embed_query)
+_builder.add_node("retrieve_context", retrieve_context)
+_builder.add_node("generate_answer", generate_answer)
+_builder.add_edge(START, "embed_query")
+_builder.add_edge("embed_query", "retrieve_context")
+_builder.add_edge("retrieve_context", "generate_answer")
+_builder.add_edge("generate_answer", END)
+
+chatbot_graph = _builder.compile()
+
+
+# === Public API ===
+def get_embedding(text: str) -> list:
+    """Generate an embedding vector for the given text."""
+    with langfuse.start_as_current_observation(
+        as_type="embedding", name="embedding-generation"
+    ) as obs:
+        try:
+            if not isinstance(text, str) or not text:
+                raise ValueError("Input text for embedding is empty. text is " + str(text))
             vector = embeddings.embed_query(text)
             obs.update(output=vector)
             return vector
         except Exception as exc:
             print(f"Error generating embedding: {exc}")
             raise
-             
+
+
 def run_chatbot(question: str):
     """
-    Generates and prints an answer to a legal question using embeddings and a chatbot.
+    Run the LangGraph RAG pipeline for a legal question.
 
-    Args:
-        question (str): The legal question to be answered.
+    Returns:
+        tuple: (answer: str, context: list)
     """
-    embedding = get_embedding(question)
-    context = get_context(embedding)
-    print(context)
-    answer_from_gpt = get_chatbot_answer(question, context)
-    print(answer_from_gpt)
-    return answer_from_gpt, context
-  
-
-# Add nodes
-agent_builder.add_node("llm_call", llm_call)
-agent_builder.add_node("run_chatbot", run_chatbot)
-
-# Add edges to connect nodes
-agent_builder.add_edge(START, "llm_call")
-agent_builder.add_edge("llm_call", "run_chatbot")
-agent_builder.add_edge("run_chatbot", END)
-
-# Compile the agent
-agent_graph = agent_builder.compile()
-
-# Show the agent
-display(Image(agent_graph.get_graph(xray=True).draw_mermaid_png()))
-
-# Example usage
-messages = [HumanMessage(content="Ce se intampla daca fur ?")]
-new_state = agent_graph.invoke({"messages": messages})
-for m in new_state["messages"]:
-    m.pretty_print()
-
-
-
-# run_chatbot("ce se intampla daca fur")
+    initial_state: ChatbotState = {
+        "question": question,
+        "embedding": [],
+        "context": [],
+        "messages": [],
+    }
+    result = chatbot_graph.invoke(initial_state)
+    answer = result["messages"][-1].content
+    context = result["context"]
+    print(answer)
+    return answer, context

@@ -12,6 +12,7 @@ dependencies = [
     "jupyter>=1.1.1",
     "lab>=8.5",
     "langchain>=1.0.3",
+    "langchain-anthropic>=1.4.0",
     "langchain-openai>=1.0.1",
     "langfuse>=3.9.0",
     "langgraph>=1.0.2",
@@ -19,5 +20,6 @@ dependencies = [
     "panda>=0.3.1",
     "pydantic>=2.11.10",
     "pymilvus>=2.6.3",
+    "pyppeteer>=0.0.25",
     "uvicorn>=0.38.0",
 ]
