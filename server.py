@@ -12,11 +12,11 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chatbot")
-async def read_chatbot(chat_request: ChatRequest)-> dict:
+def read_chatbot(chat_request: ChatRequest)-> dict:
     """
     Receives a question and returns a simulated chatbot response based on the Romanian penal code.
     """
-    answer = await run_in_threadpool(run_chatbot, chat_request.question)
+    answer = run_chatbot(chat_request.question)
 
     return {"answer": answer[0]}
 
