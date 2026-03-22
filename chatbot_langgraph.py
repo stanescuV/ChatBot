@@ -59,7 +59,7 @@ def retrieve_context(state: ChatbotState) -> dict:
     return {"context": context}
 
 
-def generate_answer(state: ChatbotState) -> dict:
+async def generate_answer(state: ChatbotState) -> dict:
     context = str(state["context"])
     prompt = (
         f"--IDENTITY: A romanian lawyer that answers short and concise.\n"
@@ -71,7 +71,7 @@ def generate_answer(state: ChatbotState) -> dict:
         SystemMessage(content=system_promt),
         HumanMessage(content=prompt),
     ]
-    response = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+    response = await llm.ainvoke(messages, config={"callbacks": [langfuse_handler]})
     return {"messages": [response]}
 
 
@@ -105,12 +105,12 @@ def get_embedding(text: str) -> list:
             raise
 
 
-def run_chatbot(question: str):
+async def run_chatbot(question: str):
     """
-    Run the LangGraph RAG pipeline for a legal question.
+    Run the LangGraph RAG pipeline and stream the answer token by token.
 
-    Returns:
-        tuple: (answer: str, context: list)
+    Yields:
+        str: tokens from the LLM response
     """
     initial_state: ChatbotState = {
         "question": question,
@@ -118,8 +118,8 @@ def run_chatbot(question: str):
         "context": [],
         "messages": [],
     }
-    result = chatbot_graph.invoke(initial_state)
-    answer = result["messages"][-1].content
-    context = result["context"]
-    print(answer)
-    return answer, context
+    async for event in chatbot_graph.astream_events(initial_state, version="v2"):
+        if event["event"] == "on_chat_model_stream":
+            chunk = event["data"]["chunk"]
+            if chunk.content:
+                yield chunk.content
