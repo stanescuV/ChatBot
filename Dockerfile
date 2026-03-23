@@ -14,8 +14,8 @@ RUN uv sync --frozen --no-dev
 # Copy application source
 COPY server.py chatbot.py chatbot_langgraph.py constants.py messages_class.py ./
 
-# Copy data files if any exist alongside the app
-COPY *.txt ./
+# Copy the db module (milvus_handler + data)
+COPY db/ ./db/
 
 # Expose the port uvicorn will listen on
 EXPOSE 8000
