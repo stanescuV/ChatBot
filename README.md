@@ -37,16 +37,43 @@ to legal queries.
 2. Install dependencies:
 
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements.txt 
    ```
 
-3. Start Milvus using Docker:
+   or 
+   ``` 
+   uv sync
+   ```
+
+   it depends on what you usually use
+
+3. Create .env and add API keys inside :
+
+   (I run everything with OpenAI API, didn't try with another provider for the moment)
+
+   ```
+   CHATBOT_MODEL_GENERATIVE=
+
+
+   CHATBOT_MODEL_EMBEDDING=
+
+
+   MILVUS_IP=localhost
+
+   
+   LANGFUSE_SECRET_KEY=
+   LANGFUSE_PUBLIC_KEY=
+   LANGFUSE_HOST=https://cloud.langfuse.com
+
+   ```
+
+4. Start Milvus using Docker:
 
    ```bash
    docker-compose up -d
    ```
 
-4. Insert data in Milvus
+5. Insert data in Milvus
    ```bash
    python insert_data_milvus.py
    ```
@@ -56,21 +83,31 @@ to legal queries.
 1. Start the chatbot
 
    ```bash
-   python -m jupyterlab
+   python -m jupyterlab  
+   ```
+
+    ```bash
+   uv run jupyter lab  
    ```
 
 2. Open the notebook
 
-   Navigate to `gradio_test.ipynb`.
+   Navigate to `test_chatbot.ipynb`.
 
 3. Run the notebook
 
    Press ▶️ Play to execute the cells.
 
-4. Access the Gradio interface
 
-   Once running, open [http://localhost:7860](http://localhost:7860) in your
-   browser.
+## Test API Locally
+
+```python
+python server.py 
+```
+
+```
+uv run server.py 
+```
 
 ## Data Processing
 
@@ -79,10 +116,6 @@ The project includes Jupyter notebooks for data processing:
 - `dataset/refactoring_cod_penal.ipynb`: Processes the Romanian Penal Code
 - `test_dataset/ragas_dataset_format.ipynb`: Prepares data for Ragas evaluation
 
-## Contact
 
-STANESCU VICTOR : stanescuvictor12@gmail.com
-
----
 
 Created and maintained by Stanescu Victor
