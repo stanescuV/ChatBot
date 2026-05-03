@@ -71,7 +71,9 @@ async def generate_answer(state: ChatbotState) -> dict:
         SystemMessage(content=system_promt),
         HumanMessage(content=prompt),
     ]
-    response = await llm.ainvoke(messages, config={"callbacks": [langfuse_handler]})
+    response = None
+    async for chunk in llm.astream(messages):
+        response = chunk if response is None else response + chunk
     return {"messages": [response]}
 
 
@@ -118,7 +120,8 @@ async def run_chatbot(question: str):
         "context": [],
         "messages": [],
     }
-    async for event in chatbot_graph.astream_events(initial_state, version="v2"):
+    config = {"callbacks": [langfuse_handler]}
+    async for event in chatbot_graph.astream_events(initial_state, version="v2", config=config):
         if event["event"] == "on_chat_model_stream":
             chunk = event["data"]["chunk"]
             if chunk.content:
