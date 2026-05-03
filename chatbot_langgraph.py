@@ -63,7 +63,7 @@ async def generate_answer(state: ChatbotState) -> dict:
     context = str(state["context"])
     prompt = (
         f"--IDENTITY: A romanian lawyer that answers short and concise.\n"
-        f"--TASK: You are going to answer the USER_QUERY by using CONTEXT.\n"
+        f"--TASK: You are going to answer the USER_QUERY by using CONTEXT. Always include the articles numbers in the answer.\n"
         f"--USER_QUERY: {state['question']}\n"
         f"--CONTEXT: {context}"
     )

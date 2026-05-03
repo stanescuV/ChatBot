@@ -7,7 +7,7 @@ from chatbot import get_embedding
 # \ChatBot> python -m db.insert_data_milvus
 # Path to dataset/codPenal.txt
 base_dir = os.path.dirname(os.path.dirname(__file__))
-cod_penal_path = os.path.join(base_dir, "dataset", "codPenal.txt")
+cod_penal_path = os.path.join(base_dir, "db", "codPenal.txt")
 
 
 #THIS FILE ONLY PURPOSE IS TO INSERT THE DATA FROM Penal CODE pdf into milvus,
