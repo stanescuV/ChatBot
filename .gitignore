@@ -4,7 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
-
+.venv
 # testing
 /coverage
 
@@ -22,3 +22,4 @@ yarn-debug.log*
 yarn-error.log*
 .gradio
 .ipynb_checkpoints
+__pycache__

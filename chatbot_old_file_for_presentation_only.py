@@ -45,7 +45,7 @@ def get_chatbot_answer(query: str, articles: list):
         str: The chatbot's answer in Romanian.
     """
     context = str(articles)
-    completion = agent.invoke(
+    completion = agent.stream(
         {
             "messages": [
                 {

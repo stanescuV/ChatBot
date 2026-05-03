@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from chatbot import run_chatbot
 from pydantic import BaseModel
 
@@ -20,11 +21,11 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chatbot")
-def read_chatbot(chat_request: ChatRequest)-> dict:
+async def read_chatbot(chat_request: ChatRequest):
     """
-    Receives a question and returns a simulated chatbot response based on the Romanian penal code.
+    Receives a question and streams the chatbot response token by token.
     """
-    answer = run_chatbot(chat_request.question)
-
-    return {"answer": answer[0]}
-
+    return StreamingResponse(
+        run_chatbot(chat_request.question),
+        media_type="text/plain",
+    )
