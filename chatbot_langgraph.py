@@ -1,4 +1,5 @@
 import os
+import asyncio
 import operator
 from dotenv import load_dotenv
 from langfuse import get_client
@@ -38,34 +39,22 @@ llm = init_chat_model(model=model_str, streaming=True)
 embeddings = OpenAIEmbeddings(model=embedding_model)
 
 
-
-
 # === State ===
 class ChatbotState(TypedDict):
     question: str
-    is_valid: bool
     embedding: list
     context: list
     messages: Annotated[list[AnyMessage], operator.add]
 
 
-# === Nodes ===
-async def guard_rail(state: ChatbotState) -> dict:
-    prompt = GUARD_RAIL_PROMPT.format(question=state["question"])
+# === Guard Rail (runs outside the graph as a plain async task) ===
+async def _check_guard_rail(question: str) -> bool:
+    prompt = GUARD_RAIL_PROMPT.format(question=question)
     response = await llm.ainvoke([HumanMessage(content=prompt)])
-    verdict = response.content.strip().upper()
-    return {"is_valid": verdict == "VALID"}
+    return response.content.strip().upper() == "VALID"
 
 
-async def rejection_answer(state: ChatbotState) -> dict:
-    response = None
-    async for chunk in llm.astream([HumanMessage(
-        content=f"Reply with exactly this sentence and nothing else: {REJECTION_MESSAGE}"
-    )]):
-        response = chunk if response is None else response + chunk
-    return {"messages": [response]}
-
-
+# === Nodes ===
 def embed_query(state: ChatbotState) -> dict:
     with langfuse.start_as_current_observation(
         as_type="embedding", name="embedding-generation"
@@ -104,24 +93,14 @@ async def generate_answer(state: ChatbotState) -> dict:
     return {"messages": [response]}
 
 
-# === Graph ===
-# guard_rail and embed_query run in parallel from START (same superstep).
-# By the time retrieve_context finishes, guard_rail has already set is_valid,
-# so the conditional edge routes to generate_answer or rejection_answer.
+# === Graph (linear pipeline — guard rail runs as a parallel asyncio task in run_chatbot) ===
 _builder = StateGraph(ChatbotState)
-_builder.add_node("guard_rail", guard_rail)
-_builder.add_node("rejection_answer", rejection_answer)
 _builder.add_node("embed_query", embed_query)
 _builder.add_node("retrieve_context", retrieve_context)
 _builder.add_node("generate_answer", generate_answer)
-_builder.add_edge(START, "guard_rail")
 _builder.add_edge(START, "embed_query")
 _builder.add_edge("embed_query", "retrieve_context")
-_builder.add_conditional_edges(
-    "retrieve_context",
-    lambda state: "generate_answer" if state["is_valid"] else "rejection_answer",
-)
-_builder.add_edge("rejection_answer", END)
+_builder.add_edge("retrieve_context", "generate_answer")
 _builder.add_edge("generate_answer", END)
 
 chatbot_graph = _builder.compile()
@@ -146,21 +125,36 @@ def get_embedding(text: str) -> list:
 
 async def run_chatbot(question: str):
     """
-    Run the LangGraph RAG pipeline and stream the answer token by token.
+    Run the RAG pipeline and stream the answer token by token.
+    Guard rail runs as a concurrent asyncio task — if it returns invalid
+    mid-stream, the pipeline is interrupted and the rejection message is sent.
 
     Yields:
-        str: tokens from the LLM response
+        str: tokens from the LLM response, or the rejection message
     """
+    #This is the only LLM function that runs outside of the graph
+    guard_task = asyncio.create_task(_check_guard_rail(question))
+
     initial_state: ChatbotState = {
         "question": question,
-        "is_valid": True,
         "embedding": [],
         "context": [],
         "messages": [],
     }
     config = {"callbacks": [langfuse_handler]}
+
     async for event in chatbot_graph.astream_events(initial_state, version="v2", config=config):
-        if event["event"] == "on_chat_model_stream":
+        # Between every token, check if guard rail has already returned invalid
+        if guard_task.done() and not guard_task.result():
+            break
+
+        node = event.get("metadata", {}).get("langgraph_node")
+        if event["event"] == "on_chat_model_stream" and node == "generate_answer":
             chunk = event["data"]["chunk"]
             if chunk.content:
                 yield chunk.content
+
+    # Pipeline done (or broken out of) — ensure guard rail result is available
+    is_valid = await guard_task
+    if not is_valid:
+        yield REJECTION_MESSAGE
