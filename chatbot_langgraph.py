@@ -11,6 +11,16 @@ from typing_extensions import TypedDict, Annotated
 from db.milvus_handler import MilvusHandler
 from constants import system_promt
 
+GUARD_RAIL_PROMPT = (
+    "You are a strict classifier. Answer ONLY with 'VALID' or 'INVALID'.\n"
+    "A question is VALID if and only if it can be answered using the Romanian Penal Code (Codul Penal al României).\n"
+    "A question is INVALID if it is off-topic, unrelated to Romanian criminal law, or cannot be answered with the Romanian Penal Code.\n"
+    "User question: {question}\n"
+    "Answer:"
+)
+
+REJECTION_MESSAGE = "Această întrebare nu poate fi răspunsă cu ajutorul Codului Penal Român."
+
 load_dotenv()
 
 # === Langfuse ===
@@ -33,12 +43,29 @@ embeddings = OpenAIEmbeddings(model=embedding_model)
 # === State ===
 class ChatbotState(TypedDict):
     question: str
+    is_valid: bool
     embedding: list
     context: list
     messages: Annotated[list[AnyMessage], operator.add]
 
 
 # === Nodes ===
+async def guard_rail(state: ChatbotState) -> dict:
+    prompt = GUARD_RAIL_PROMPT.format(question=state["question"])
+    response = await llm.ainvoke([HumanMessage(content=prompt)])
+    verdict = response.content.strip().upper()
+    return {"is_valid": verdict == "VALID"}
+
+
+async def rejection_answer(state: ChatbotState) -> dict:
+    response = None
+    async for chunk in llm.astream([HumanMessage(
+        content=f"Reply with exactly this sentence and nothing else: {REJECTION_MESSAGE}"
+    )]):
+        response = chunk if response is None else response + chunk
+    return {"messages": [response]}
+
+
 def embed_query(state: ChatbotState) -> dict:
     with langfuse.start_as_current_observation(
         as_type="embedding", name="embedding-generation"
@@ -78,13 +105,23 @@ async def generate_answer(state: ChatbotState) -> dict:
 
 
 # === Graph ===
+# guard_rail and embed_query run in parallel from START (same superstep).
+# By the time retrieve_context finishes, guard_rail has already set is_valid,
+# so the conditional edge routes to generate_answer or rejection_answer.
 _builder = StateGraph(ChatbotState)
+_builder.add_node("guard_rail", guard_rail)
+_builder.add_node("rejection_answer", rejection_answer)
 _builder.add_node("embed_query", embed_query)
 _builder.add_node("retrieve_context", retrieve_context)
 _builder.add_node("generate_answer", generate_answer)
+_builder.add_edge(START, "guard_rail")
 _builder.add_edge(START, "embed_query")
 _builder.add_edge("embed_query", "retrieve_context")
-_builder.add_edge("retrieve_context", "generate_answer")
+_builder.add_conditional_edges(
+    "retrieve_context",
+    lambda state: "generate_answer" if state["is_valid"] else "rejection_answer",
+)
+_builder.add_edge("rejection_answer", END)
 _builder.add_edge("generate_answer", END)
 
 chatbot_graph = _builder.compile()
@@ -116,6 +153,7 @@ async def run_chatbot(question: str):
     """
     initial_state: ChatbotState = {
         "question": question,
+        "is_valid": True,
         "embedding": [],
         "context": [],
         "messages": [],
